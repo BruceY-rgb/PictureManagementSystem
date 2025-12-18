@@ -1,0 +1,269 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== 用户表 ====================
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique @db.VarChar(50)
+  email     String   @unique @db.VarChar(100)
+  password  String   @db.VarChar(255)  // bcrypt hash
+
+  // 用户资料（可选）
+  nickname  String?  @db.VarChar(100)
+  avatar    String?  @db.VarChar(255)
+  bio       String?  @db.Text
+
+  // 关系
+  images    Image[]
+  albums    Album[]
+
+  // 时间戳
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+  @@index([username])
+  @@index([email])
+}
+
+// ==================== 图片表 ====================
+model Image {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // ===== 图片文件 (BLOB 存储) =====
+  originalImage     Bytes  @db.LongBlob  // 原始图片
+  thumbnailSmall    Bytes  @db.MediumBlob // 小缩略图 (150x150)
+  thumbnailMedium   Bytes  @db.MediumBlob // 中缩略图 (400x400)
+  thumbnailLarge    Bytes  @db.MediumBlob // 大缩略图 (800x800)
+
+  // ===== 基本信息 =====
+  filename     String   @db.VarChar(255)
+  originalName String   @db.VarChar(255)  // 用户上传时的原始文件名
+  mimeType     String   @db.VarChar(50)   // image/jpeg, image/png, etc.
+  fileSize     Int                         // 字节数
+
+  // ===== 图片属性 =====
+  width        Int                         // 原图宽度
+  height       Int                         // 原图高度
+  aspectRatio  Float?                      // 宽高比
+  orientation  Int?                        // EXIF orientation (1-8)
+
+  // ===== EXIF 信息 =====
+  // 拍摄信息
+  takenAt      DateTime? // 拍摄时间
+  cameraModel  String?   @db.VarChar(100) // 相机型号
+  cameraMake   String?   @db.VarChar(100) // 相机制造商
+  lensModel    String?   @db.VarChar(100) // 镜头型号
+
+  // 拍摄参数
+  focalLength  Float?    // 焦距 (mm)
+  aperture     Float?    // 光圈 (f-number)
+  shutterSpeed String?   @db.VarChar(50)  // 快门速度 (e.g., "1/1000")
+  iso          Int?      // ISO 感光度
+
+  // GPS 信息
+  latitude     Float?    // 纬度
+  longitude    Float?    // 经度
+  altitude     Float?    // 海拔 (米)
+  gpsTimestamp DateTime? // GPS 时间戳
+
+  // 软件信息
+  software     String?   @db.VarChar(100) // 编辑软件
+
+  // ===== 编辑历史 =====
+  isEdited     Boolean   @default(false)  // 是否被编辑过
+  editHistory  Json?                      // 编辑历史记录 (JSON)
+
+  // ===== 用户自定义信息 =====
+  title        String?   @db.VarChar(200) // 图片标题
+  description  String?   @db.Text         // 图片描述
+
+  // ===== AI 分析结果 =====
+  aiAnalyzed   Boolean   @default(false)  // 是否已进行 AI 分析
+  aiLabels     Json?                      // AI 生成的标签 (JSON array)
+  aiConfidence Float?                     // AI 置信度
+
+  // ===== 统计信息 =====
+  viewCount    Int       @default(0)      // 查看次数
+
+  // ===== 收藏功能 =====
+  isFavorite   Boolean   @default(false)  // 是否收藏
+
+  // ===== 软删除（回收站） =====
+  deletedAt    DateTime?                  // 删除时间（null表示未删除）
+
+  // 关系
+  tags         ImageTag[]
+  albums       AlbumImage[]
+
+  // 时间戳
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("images")
+  @@index([userId])
+  @@index([createdAt])
+  @@index([takenAt])
+  @@index([latitude, longitude])
+  @@index([isFavorite])
+  @@index([deletedAt])
+}
+
+// ==================== 标签表 ====================
+model Tag {
+  id     String  @id @default(cuid())
+  name   String  @unique @db.VarChar(50)
+  type   TagType @default(CUSTOM)
+  color  String? @db.VarChar(7)  // Hex color code (e.g., #FF5733)
+
+  // 标签统计
+  useCount Int @default(0)  // 使用次数
+
+  // 关系
+  images ImageTag[]
+
+  // 时间戳
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("tags")
+  @@index([name])
+  @@index([type])
+}
+
+// ==================== 标签类型枚举 ====================
+enum TagType {
+  AUTO_EXIF    // EXIF 自动提取的标签
+  AUTO_AI      // AI 自动生成的标签
+  CUSTOM       // 用户自定义标签
+}
+
+// ==================== 图片-标签关联表 ====================
+model ImageTag {
+  imageId String
+  tagId   String
+
+  image Image @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  tag   Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  // 时间戳
+  createdAt DateTime @default(now())
+
+  @@id([imageId, tagId])
+  @@map("image_tags")
+  @@index([imageId])
+  @@index([tagId])
+}
+
+// ==================== 用户会话表 (NextAuth) ====================
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ==================== 相册表 ====================
+model Album {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String   @db.VarChar(100)  // 相册名称
+  description String?  @db.Text          // 相册描述
+  coverImageId String?                   // 封面图片ID
+
+  // 关系
+  images      AlbumImage[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("albums")
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// ==================== 相册-图片关联表 ====================
+model AlbumImage {
+  albumId   String
+  imageId   String
+
+  album     Album   @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  image     Image   @relation(fields: [imageId], references: [id], onDelete: Cascade)
+
+  addedAt   DateTime @default(now())
+
+  @@id([albumId, imageId])
+  @@map("album_images")
+  @@index([albumId])
+  @@index([imageId])
+}
+
+// ==================== AI分析任务队列表 ====================
+model AIAnalysisTask {
+  id        String   @id @default(cuid())
+  imageId   String
+  userId    String
+
+  status    AITaskStatus @default(PENDING)
+  retries   Int      @default(0)
+  error     String?  @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  startedAt DateTime?
+  completedAt DateTime?
+
+  @@map("ai_analysis_tasks")
+  @@index([status])
+  @@index([imageId])
+  @@index([createdAt])
+}
+
+// ==================== AI任务状态枚举 ====================
+enum AITaskStatus {
+  PENDING     // 待处理
+  PROCESSING  // 处理中
+  COMPLETED   // 已完成
+  FAILED      // 失败
+}
