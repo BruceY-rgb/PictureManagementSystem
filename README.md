@@ -72,7 +72,11 @@
 ### 1. 克隆项目
 
 ```bash
+<<<<<<< Updated upstream
 git clone [<repository-url>](https://github.com/BruceY-rgb/PictureManagementSystem.git)
+=======
+git clone https://github.com/BruceY-rgb/PictureManagementSystem.git
+>>>>>>> Stashed changes
 cd PictureManagementSystem
 ```
 
