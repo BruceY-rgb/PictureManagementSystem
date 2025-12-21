@@ -1,0 +1,47 @@
+# 依赖目录
+node_modules
+npm-debug.log*
+
+# Next.js 构建输出
+.next
+out
+
+# 环境变量文件（不要打包到镜像中）
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 测试
+coverage
+.nyc_output
+
+# 文档（可选，不影响运行）
+*.md
+!README.md
+docs/
+
+# Docker 相关
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# 其他
+*.log
+*.tmp
+*.temp

@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  # Next.js 应用
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: picture-management-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=mysql://root:${MYSQL_ROOT_PASSWORD:-picture123}@db:3306/picture_management
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-your-super-secret-key-change-in-production}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - DEEPSEEK_BASE_URL=${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - picture-network
+
+  # MySQL 数据库
+  db:
+    image: mysql:8.0
+    container_name: picture-management-db
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-picture123}
+      - MYSQL_DATABASE=picture_management
+      - MYSQL_CHARSET=utf8mb4
+      - MYSQL_COLLATION=utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --max_allowed_packet=256M
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-picture123}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - picture-network
+
+  # Prisma 数据库迁移（一次性任务）
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.migrate
+    container_name: picture-management-migrate
+    environment:
+      - DATABASE_URL=mysql://root:${MYSQL_ROOT_PASSWORD:-picture123}@db:3306/picture_management
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - picture-network
+
+networks:
+  picture-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
