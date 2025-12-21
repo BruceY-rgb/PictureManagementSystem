@@ -189,9 +189,9 @@ function buildWhereClause(
   if (parsed.keywords.length > 0) {
     for (const keyword of parsed.keywords) {
       orConditions.push(
-        { originalName: { contains: keyword, mode: 'insensitive' } },
-        { title: { contains: keyword, mode: 'insensitive' } },
-        { description: { contains: keyword, mode: 'insensitive' } }
+        { originalName: { contains: keyword } },
+        { title: { contains: keyword } },
+        { description: { contains: keyword } }
       )
 
       // Also search in tags
@@ -199,7 +199,7 @@ function buildWhereClause(
         tags: {
           some: {
             tag: {
-              name: { contains: keyword, mode: 'insensitive' },
+              name: { contains: keyword },
             },
           },
         },
@@ -207,26 +207,18 @@ function buildWhereClause(
     }
   }
 
-  // Location search (EXIF tags)
+  // Location search (via tags, since Image model doesn't have city/country/state fields)
   if (parsed.locations && parsed.locations.length > 0) {
-    orConditions.push({
-      tags: {
-        some: {
-          tag: {
-            type: 'AUTO_EXIF',
-            name: { in: parsed.locations },
+    for (const location of parsed.locations) {
+      orConditions.push({
+        tags: {
+          some: {
+            tag: {
+              name: { contains: location },
+            },
           },
         },
-      },
-    })
-
-    // Also search in location-related EXIF fields
-    for (const location of parsed.locations) {
-      orConditions.push(
-        { city: { contains: location, mode: 'insensitive' } },
-        { country: { contains: location, mode: 'insensitive' } },
-        { state: { contains: location, mode: 'insensitive' } }
-      )
+      })
     }
   }
 
@@ -340,10 +332,10 @@ function rankByRelevance(
  */
 function countMatches(arr1: string[], arr2: string[]): number {
   const set1 = new Set(arr1.map(s => s.toLowerCase()))
-  const set2 = new Set(arr2.map(s => s.toLowerCase()))
+  const arr2Lower = arr2.map(s => s.toLowerCase())
   let count = 0
-  for (const item of set2) {
-    if (set1.has(item)) {
+  for (let i = 0; i < arr2Lower.length; i++) {
+    if (set1.has(arr2Lower[i])) {
       count++
     }
   }

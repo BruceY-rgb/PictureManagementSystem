@@ -5,7 +5,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { analyzeImage } from './doubao'
-import { TagType, AITaskStatus } from '@prisma/client'
+import { TagType, AITaskStatus, Prisma } from '@prisma/client'
 
 // Configuration
 const MAX_RETRIES = parseInt(process.env.AI_RETRY_ATTEMPTS || '3')
@@ -375,7 +375,7 @@ export async function retryFailedTask(imageId: string, userId: string): Promise<
     where: { id: imageId },
     data: {
       aiAnalyzed: false,
-      aiLabels: null,
+      aiLabels: Prisma.DbNull,
       aiConfidence: null,
     },
   })

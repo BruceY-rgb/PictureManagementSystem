@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import Link from 'next/link'
@@ -20,7 +20,7 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
@@ -62,81 +62,95 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <div className="flex items-center justify-center mb-4">
-            <ImageIcon className="h-12 w-12 text-primary" />
+    <Card className="w-full max-w-md">
+      <CardHeader className="space-y-1">
+        <div className="flex items-center justify-center mb-4">
+          <ImageIcon className="h-12 w-12 text-primary" />
+        </div>
+        <CardTitle className="text-2xl text-center">欢迎回来</CardTitle>
+        <CardDescription className="text-center">
+          登录您的图片管理系统账户
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {registered && (
+          <div className="mb-4 p-3 text-sm text-green-600 bg-green-50 rounded-md">
+            注册成功!请登录您的账户
           </div>
-          <CardTitle className="text-2xl text-center">欢迎回来</CardTitle>
-          <CardDescription className="text-center">
-            登录您的图片管理系统账户
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {registered && (
-            <div className="mb-4 p-3 text-sm text-green-600 bg-green-50 rounded-md">
-              注册成功!请登录您的账户
+        )}
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">邮箱</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="请输入邮箱"
+              {...register('email')}
+              disabled={isLoading}
+            />
+            {errors.email && (
+              <p className="text-sm text-red-600">{errors.email.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">密码</Label>
+              <Link
+                href="/forgot-password"
+                className="text-sm text-primary hover:underline"
+              >
+                忘记密码?
+              </Link>
+            </div>
+            <Input
+              id="password"
+              type="password"
+              placeholder="请输入密码"
+              {...register('password')}
+              disabled={isLoading}
+            />
+            {errors.password && (
+              <p className="text-sm text-red-600">{errors.password.message}</p>
+            )}
+          </div>
+
+          {error && (
+            <div className="p-3 text-sm text-red-600 bg-red-50 rounded-md">
+              {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">邮箱</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="请输入邮箱"
-                {...register('email')}
-                disabled={isLoading}
-              />
-              {errors.email && (
-                <p className="text-sm text-red-600">{errors.email.message}</p>
-              )}
-            </div>
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? '登录中...' : '登录'}
+          </Button>
+        </form>
+      </CardContent>
+      <CardFooter>
+        <div className="text-sm text-center w-full text-muted-foreground">
+          还没有账户?{' '}
+          <Link href="/register" className="text-primary hover:underline">
+            立即注册
+          </Link>
+        </div>
+      </CardFooter>
+    </Card>
+  )
+}
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">密码</Label>
-                <Link
-                  href="/forgot-password"
-                  className="text-sm text-primary hover:underline"
-                >
-                  忘记密码?
-                </Link>
-              </div>
-              <Input
-                id="password"
-                type="password"
-                placeholder="请输入密码"
-                {...register('password')}
-                disabled={isLoading}
-              />
-              {errors.password && (
-                <p className="text-sm text-red-600">{errors.password.message}</p>
-              )}
-            </div>
-
-            {error && (
-              <div className="p-3 text-sm text-red-600 bg-red-50 rounded-md">
-                {error}
-              </div>
-            )}
-
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? '登录中...' : '登录'}
-            </Button>
-          </form>
-        </CardContent>
-        <CardFooter>
-          <div className="text-sm text-center w-full text-muted-foreground">
-            还没有账户?{' '}
-            <Link href="/register" className="text-primary hover:underline">
-              立即注册
-            </Link>
-          </div>
-        </CardFooter>
-      </Card>
+export default function LoginPage() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      <Suspense fallback={
+        <Card className="w-full max-w-md">
+          <CardContent className="p-8 text-center">
+            加载中...
+          </CardContent>
+        </Card>
+      }>
+        <LoginForm />
+      </Suspense>
     </div>
   )
 }

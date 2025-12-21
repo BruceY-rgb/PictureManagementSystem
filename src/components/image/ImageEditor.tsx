@@ -659,7 +659,7 @@ export default function ImageEditor({ imageUrl, onSaved }: Props) {
                     <p>• 在图片上按住鼠标左键并拖拽选择截图区域</p>
                     <p>• 拖动边框上的圆点可以调整大小</p>
                     <p>• 点击截图区域内部可以移动位置</p>
-                    <p>• 选择完成后点击"确认裁剪"应用更改</p>
+                    <p>• 选择完成后点击「确认裁剪」应用更改</p>
                   </div>
 
                   <div className="flex gap-2">

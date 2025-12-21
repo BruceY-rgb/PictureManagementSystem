@@ -65,6 +65,12 @@
 ## 🚀 快速开始
 
 ### 前置要求
+
+**方式一：Docker 部署（推荐）**
+- Docker 20.10+
+- Docker Compose 2.0+
+
+**方式二：本地开发**
 - Node.js 18+
 - MySQL 8.0+
 - npm 或 yarn
@@ -72,11 +78,7 @@
 ### 1. 克隆项目
 
 ```bash
-<<<<<<< Updated upstream
-git clone [<repository-url>](https://github.com/BruceY-rgb/PictureManagementSystem.git)
-=======
 git clone https://github.com/BruceY-rgb/PictureManagementSystem.git
->>>>>>> Stashed changes
 cd PictureManagementSystem
 ```
 
@@ -274,15 +276,59 @@ npx tsc --noEmit              # TypeScript 类型检查
 3. 配置环境变量
 4. 部署
 
-### Docker 部署
+### Docker 部署 (推荐)
+
+使用 Docker Compose 一键部署完整环境（包含 MySQL 数据库）：
 
 ```bash
-# 构建镜像
-docker build -t picture-management .
+# 1. 复制环境变量配置文件
+cp .env.docker.example .env
 
-# 运行容器
-docker run -p 3000:3000 --env-file .env picture-management
+# 2. 编辑 .env 文件，配置必要的环境变量
+# - MYSQL_ROOT_PASSWORD: 数据库密码
+# - NEXTAUTH_SECRET: 认证密钥（生产环境请修改）
+# - DEEPSEEK_API_KEY: AI 服务密钥（可选）
+
+# 3. 构建并启动所有服务
+docker-compose up -d --build
+
+# 4. 运行数据库迁移
+docker-compose run --rm migrate
+
+# 5. 访问应用
+# http://localhost:3000
 ```
+
+#### Docker 常用命令
+
+```bash
+# 查看服务状态
+docker-compose ps
+
+# 查看应用日志
+docker-compose logs -f app
+
+# 停止所有服务
+docker-compose down
+
+# 停止并清除数据（谨慎使用）
+docker-compose down -v
+
+# 重新构建
+docker-compose up -d --build
+```
+
+#### Docker 文件说明
+
+| 文件 | 说明 |
+|------|------|
+| `Dockerfile` | Next.js 应用镜像配置 |
+| `Dockerfile.migrate` | 数据库迁移镜像配置 |
+| `docker-compose.yml` | Docker Compose 编排配置 |
+| `.dockerignore` | Docker 构建忽略文件 |
+| `.env.docker.example` | Docker 环境变量示例 |
+
+更多 Docker 部署详情请参阅 [DOCKER.md](DOCKER.md)
 
 ### 手动部署
 

@@ -63,7 +63,7 @@ export function NaturalLanguageSearch({
     }
   }
 
-  const useSuggestion = (suggestion: string) => {
+  const handleSuggestionClick = (suggestion: string) => {
     setQuery(suggestion)
     setShowSuggestions(false)
   }
@@ -216,7 +216,7 @@ export function NaturalLanguageSearch({
                 key={suggestion}
                 variant="outline"
                 className="cursor-pointer hover:bg-accent transition-colors"
-                onClick={() => useSuggestion(suggestion)}
+                onClick={() => handleSuggestionClick(suggestion)}
               >
                 {suggestion}
               </Badge>
